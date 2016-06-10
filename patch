@@ -8,7 +8,7 @@ PD="build_tools/patches"
 PATCHES=(
 'hardware/libhardware           audio_fix.patch'
 'bootable/recovery              bootable_recovery.patch'
-'build/core 			build.patch'
+'build              		build.patch'
 'external/icu                   external_icu.patch'
 'external/sepolicy              external_sepolicy.patch'
 'external/tinyalsa              external_tinyalsa.patch'
