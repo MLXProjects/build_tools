@@ -1,0 +1,26 @@
+From e145ed91d78094f1d922344c56e61e1c37d1c35a Mon Sep 17 00:00:00 2001
+From: Faiz Authar <faizauthar@gmail.com>
+Date: Tue, 12 Apr 2016 15:53:41 +0700
+Subject: Fix Fail compile kernel for rhea
+
+Change-Id: I1f4c011476f9534e0a60410ce61f21ea45db2888
+
+diff --git a/core/tasks/kernel.mk b/core/tasks/kernel.mk
+index 4283dbb..f44579b 100644
+--- a/core/tasks/kernel.mk
++++ b/core/tasks/kernel.mk
+@@ -255,13 +255,7 @@ $(KERNEL_CONFIG): $(KERNEL_OUT_STAMP) $(KERNEL_DEFCONFIG_SRC) $(KERNEL_ADDITIONA
+ TARGET_KERNEL_BINARIES: $(KERNEL_OUT_STAMP) $(KERNEL_CONFIG) $(KERNEL_HEADERS_INSTALL_STAMP)
+ 	@echo -e ${CL_GRN}"Building Kernel"${CL_RST}
+ 	$(MAKE) $(MAKE_FLAGS) -C $(KERNEL_SRC) O=$(KERNEL_OUT) ARCH=$(KERNEL_ARCH) $(KERNEL_CROSS_COMPILE) $(TARGET_PREBUILT_INT_KERNEL_TYPE)
+-	$(hide) if grep -q 'CONFIG_OF=y' $(KERNEL_CONFIG) ; \
+-			then \
+-				echo -e ${CL_GRN}"Building DTBs"${CL_RST} ; \
+-				$(MAKE) $(MAKE_FLAGS) -C $(KERNEL_SRC) O=$(KERNEL_OUT) ARCH=$(KERNEL_ARCH) $(KERNEL_CROSS_COMPILE) dtbs ; \
+-			else \
+-				echo "DTBs not enabled" ; \
+-			fi ;
++
+ 	$(hide) if grep -q 'CONFIG_MODULES=y' $(KERNEL_CONFIG) ; \
+ 			then \
+ 				echo -e ${CL_GRN}"Building Kernel Modules"${CL_RST} ; \
