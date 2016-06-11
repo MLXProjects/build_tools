@@ -9,6 +9,7 @@ PATCHES=(
 'hardware/libhardware           audio_fix.patch'
 'bootable/recovery              bootable_recovery.patch'
 'build              		build.patch'
+'build                          toolchain.patch'
 'external/icu                   external_icu.patch'
 'external/sepolicy              external_sepolicy.patch'
 'external/tinyalsa              external_tinyalsa.patch'
