@@ -5,12 +5,19 @@ cd ..
 COUNT=0
 CURRENT_DIR="$PWD"
 PD="build_tools/patches"
-PATCHES=(
+yPATCHES=(
+'build                          build.patch'
+'external/icu                   external_icu.patch'
+'external/sepolicy              external_sepolicy.patch'
+'external/tinyalsa.patch        external_tinyalsa.patch'
 'frameworks/av			frameworks_av.patch'
+'frameworks/av                  audio_fix2.patch'
 'frameworks/base		frameworks_base.patch'
 'frameworks/native		frameworks_native.patch'
 'frameworks/opt/telephony	frameworks_opt_telephony.patch'
+'hardware/libhardware           audio_fix.patch'
 'hardware/broadcom/libbt	hardware_broadcom_libbt.patch'
+'system/media/audio             microphone_fix.patch'
 'packages/inputmethods/LatinIME packages_inputmethods_LatinIME.patch'
 'packages/services/Telephony	packages_services_Telephony.patch'
 'system/core			system_core.patch'

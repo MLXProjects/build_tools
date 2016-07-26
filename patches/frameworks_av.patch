@@ -54,8 +54,8 @@ index 427728f..ed54b42 100644
                      "using-sw-read-often", !!(usageBits & GRALLOC_USAGE_SW_READ_OFTEN));
          }
      }
-+// Capri's OMX fail to set a reasonable default size from width and height
-+#ifdef CAPRI_HWC
++// Rhea's OMX fail to set a reasonable default size from width and height
++#ifdef RHEA_HWC
 +    else if (!strncmp(mComponentName.c_str(), "OMX.BRCM.vc4.decoder.", 21)) {
 +        int32_t width;
 +        int32_t height;
@@ -77,8 +77,8 @@ index ce76d3c..32b58a2 100644
      if (meta->findInt32(kKeyMaxInputSize, &maxInputSize)) {
          setMinBufferSize(kPortIndexInput, (OMX_U32)maxInputSize);
      }
-+// Capri's OMX fail to set a reasonable default size from width and height
-+#ifdef CAPRI_HWC
++// Rhea's OMX fail to set a reasonable default size from width and height
++#ifdef RHEA_HWC
 +    else if (!strncmp(mComponentName, "OMX.BRCM.vc4.decoder.", 21)) {
 +        int32_t width;
 +        int32_t height;
@@ -114,7 +114,7 @@ index ed54b42..e88641b 100644
          return err;
      }
  
-+#ifdef CAPRI_HWC
++#ifdef RHEA_HWC
 +    if (strncmp(mComponentName.c_str(), "OMX.BRCM.vc4.encoder.", 21) != 0)
 +        // Skip checking on vc4 encoder. It will return the incorrect
 +        // port index, but correct parameters.
@@ -144,8 +144,8 @@ index e88641b..a4cc367 100644
 --- a/media/libstagefright/ACodec.cpp
 +++ b/media/libstagefright/ACodec.cpp
 @@ -1765,13 +1765,9 @@ status_t ACodec::configureCodec(
- // Capri's OMX fail to set a reasonable default size from width and height
- #ifdef CAPRI_HWC
+ // Rhea's OMX fail to set a reasonable default size from width and height
+ #ifdef RHEA_HWC
      else if (!strncmp(mComponentName.c_str(), "OMX.BRCM.vc4.decoder.", 21)) {
 -        int32_t width;
 -        int32_t height;
@@ -187,8 +187,8 @@ index 23215dd..300d475 100644
      audio_hw_device_t *inHwHal = inHwDev->hwDevice();
      audio_stream_in_t *inStream = NULL;
 +
-+#ifdef CAPRI_HWC
-+    ALOGD("Forcing channel mask to mono on capri");
++#ifdef RHEA_HWC
++    ALOGD("Forcing channel mask to mono on rhea");
 +    halconfig.channel_mask = AUDIO_CHANNEL_IN_MONO;
 +#endif
 +
@@ -220,9 +220,9 @@ index 300d475..ebd6412 100644
 @@ -2120,8 +2120,9 @@ sp<AudioFlinger::RecordThread> AudioFlinger::openInput_l(audio_module_handle_t m
      audio_stream_in_t *inStream = NULL;
  
- #ifdef CAPRI_HWC
--    ALOGD("Forcing channel mask to mono on capri");
-+    ALOGD("Forcing input to mono 48K on capri");
+ #ifdef RHEA_HWC
+-    ALOGD("Forcing channel mask to mono on rhea");
++    ALOGD("Forcing input to mono 48K on rhea");
      halconfig.channel_mask = AUDIO_CHANNEL_IN_MONO;
 +    halconfig.sample_rate = 48000;
  #endif
@@ -255,7 +255,7 @@ index a4cc367..b714441 100644
      // This check was present in KitKat.
      if (def.nBufferCountActual < def.nBufferCountMin + *minUndequeuedBuffers) {
  #endif
-+#ifdef CAPRI_HWC
++#ifdef RHEA_HWC
 +    for (OMX_U32 extraBuffers = 1; /* condition inside loop */; extraBuffers--) {
 +#else
      for (OMX_U32 extraBuffers = 2 + 1; /* condition inside loop */; extraBuffers--) {
@@ -271,7 +271,7 @@ index 32b58a2..5f806a3 100644
      // This check was present in KitKat.
      if (def.nBufferCountActual < def.nBufferCountMin + minUndequeuedBufs) {
  #endif
-+#ifdef CAPRI_HWC
++#ifdef RHEA_HWC
 +    for (OMX_U32 extraBuffers = 1; /* condition inside loop */; extraBuffers--) {
 +#else
      for (OMX_U32 extraBuffers = 2 + 1; /* condition inside loop */; extraBuffers--) {
@@ -286,7 +286,7 @@ index 32b58a2..5f806a3 100644
 From b056d84b0f395b0e9298e7bf43022ee866603b7d Mon Sep 17 00:00:00 2001
 From: Pawit Pornkitprasan <p.pawit@gmail.com>
 Date: Sat, 20 Dec 2014 19:09:59 +0700
-Subject: [PATCH 08/10] stagefright: CAPRI_HWC: fix for screen recording
+Subject: [PATCH 08/10] stagefright: RHEA_HWC: fix for screen recording
 
 Change-Id: Ib8a677eb1ecabc30efe163faa9b209f4db966437
 ---
@@ -302,7 +302,7 @@ index 1a7dc9d..1c468d4 100644
              }
          } else if (type == kMetadataBufferTypeANWBuffer
                  && header->nAllocLen >= sizeof(VideoNativeMetadata)) {
-+#ifndef CAPRI_HWC
++#ifndef RHEA_HWC
              VideoNativeMetadata &nativeMeta = *(VideoNativeMetadata *)data;
              if (nativeMeta.pBuffer != codecBuffer.mGraphicBuffer->getNativeBuffer()) {
                  // should never happen
@@ -322,7 +322,7 @@ index 2d5f09d..18b50ca 100644
      }
  
      if (def.format.video.eColorFormat != OMX_COLOR_FormatAndroidOpaque) {
-+#ifdef CAPRI_HWC
++#ifdef RHEA_HWC
 +        // VC Encoder change OMX_COLOR_FormatAndroidOpaque to 0x7F000005
 +        if (def.format.video.eColorFormat != 0x7F000005) {
 +#endif
@@ -330,7 +330,7 @@ index 2d5f09d..18b50ca 100644
                  "(AndroidOpaque) color format instead of %s(%#x)",
                  asString(def.format.video.eColorFormat), def.format.video.eColorFormat);
          return INVALID_OPERATION;
-+#ifdef CAPRI_HWC
++#ifdef RHEA_HWC
 +        }
 +#endif
      }
@@ -343,7 +343,7 @@ index 2d5f09d..18b50ca 100644
 From 480e523952243c2d8cdc18ae6d6b8d14c45789d2 Mon Sep 17 00:00:00 2001
 From: Pawit Pornkitprasan <p.pawit@gmail.com>
 Date: Sun, 21 Dec 2014 15:25:33 +0700
-Subject: [PATCH 09/10] stagefright: CAPRI_HWC: fix for miracast
+Subject: [PATCH 09/10] stagefright: RHEA_HWC: fix for miracast
 
 Our encoder does not support OMX_Video_ControlRateConstant
 
@@ -362,7 +362,7 @@ index b714441..1bcc4ef 100644
  
 -static OMX_VIDEO_CONTROLRATETYPE getBitrateMode(const sp<AMessage> &msg) {
 +static OMX_VIDEO_CONTROLRATETYPE getBitrateMode(const sp<AMessage> &msg, const AString &name) {
-+#ifdef CAPRI_HWC
++#ifdef RHEA_HWC
 +    // vc4 encoder only supports VBR
 +    if (strncmp(name.c_str(), "OMX.BRCM.vc4.encoder.", 21) == 0) {
 +        return OMX_Video_ControlRateVariable;
@@ -440,8 +440,8 @@ index ebd6412..7c4ff1b 100644
      for (size_t i = 0; i < mAudioHwDevs.size(); i++) {
          audio_hw_device_t *dev = mAudioHwDevs.valueAt(i)->hwDevice();
          status_t result = dev->get_mic_mute(dev, &state);
-+#ifdef CAPRI_HWC
-+        // When not muted, Capri's audio driver incorrectly returns NO_INIT instead of NO_ERROR
++#ifdef RHEA_HWC
++        // When not muted, Rhea's audio driver incorrectly returns NO_INIT instead of NO_ERROR
 +        if (mAudioHwDevs.valueAt(i) == mPrimaryHardwareDev && result == NO_INIT) {
 +            result = NO_ERROR;
 +        }
