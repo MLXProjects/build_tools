@@ -1,35 +1,31 @@
-From 0f5584a82885bb563e53f7f1460321e22e63b28f Mon Sep 17 00:00:00 2001
-From: Ricardo Cerqueira <cyanogenmod@cerqueira.org>
-Date: Tue, 6 Aug 2013 16:11:06 +0100
-Subject: [PATCH 1/8] libgui: Bring back support for mHeap-based screenshots
+From 1d31f9f52ed129f987df81ba849ff11c224a8542 Mon Sep 17 00:00:00 2001
+From: karthick111 <karthickrko61@gmail.com>
+Date: Wed, 27 Jul 2016 13:09:29 +0200
+Subject: [PATCH] update patch
 
-Older graphics libraries throw a hissy fit when trying to lock
-buffers for Surface-based screenshots, on at least Tegra2/3 and
-Exynos4 hardware.
-
-This patch depends on the BOARD_USE_MHEAP_SCREENSHOT board flag
-and requires the ro.bq.gpu_to_cpu_unsupported property set to 1
-in order to work.
-
-[pawitp: port to Lollipop]
-
-Change-Id: I7db955e2cdd120018e349c14290e975788e70ed3
+Change-Id: Ia34e8e3fade111abcd26f45c9cce75cafe37de1e
 ---
  include/gui/ISurfaceComposer.h             |  15 +++
  include/gui/SurfaceComposerClient.h        |   6 ++
+ include/ui/FramebufferNativeWindow.h       |   2 +-
+ libs/binder/IPCThreadState.cpp             |   4 +
+ libs/binder/Parcel.cpp                     |  18 ++++
  libs/gui/Android.mk                        |   4 +
- libs/gui/ISurfaceComposer.cpp              |  52 ++++++++++
+ libs/gui/BufferQueueProducer.cpp           |   5 +
+ libs/gui/ISurfaceComposer.cpp              |  52 +++++++++
  libs/gui/SurfaceComposerClient.cpp         |  26 +++++
- services/surfaceflinger/Android.mk         |   4 +
- services/surfaceflinger/SurfaceFlinger.cpp | 159 ++++++++++++++++++++++++++++-
+ libs/gui/tests/Surface_test.cpp            |   4 +-
+ services/surfaceflinger/Android.mk         |   8 ++
+ services/surfaceflinger/DisplayDevice.cpp  |   8 ++
+ services/surfaceflinger/SurfaceFlinger.cpp | 164 ++++++++++++++++++++++++++++-
  services/surfaceflinger/SurfaceFlinger.h   |  16 +++
- 8 files changed, 279 insertions(+), 3 deletions(-)
+ 14 files changed, 326 insertions(+), 6 deletions(-)
 
 diff --git a/include/gui/ISurfaceComposer.h b/include/gui/ISurfaceComposer.h
-index 84ddb27..563b4d1 100644
+index 6e3fc5a..f94fdbf 100644
 --- a/include/gui/ISurfaceComposer.h
 +++ b/include/gui/ISurfaceComposer.h
-@@ -148,6 +148,18 @@ public:
+@@ -150,6 +150,18 @@ public:
              Rotation rotation = eRotateNone,
              bool isCpuConsumer = false) = 0;
  
@@ -48,7 +44,7 @@ index 84ddb27..563b4d1 100644
      /* Clears the frame statistics for animations.
       *
       * Requires the ACCESS_SURFACE_FLINGER permission.
-@@ -177,6 +189,9 @@ public:
+@@ -179,6 +191,9 @@ public:
          GET_BUILT_IN_DISPLAY,
          SET_TRANSACTION_STATE,
          AUTHENTICATE_SURFACE,
@@ -82,8 +78,79 @@ index 9ec3f23..ec83b02 100644
      mutable sp<CpuConsumer> mCpuConsumer;
      mutable sp<IGraphicBufferProducer> mProducer;
      CpuConsumer::LockedBuffer mBuffer;
+diff --git a/include/ui/FramebufferNativeWindow.h b/include/ui/FramebufferNativeWindow.h
+index 6b66d5f..2eb1cc1 100644
+--- a/include/ui/FramebufferNativeWindow.h
++++ b/include/ui/FramebufferNativeWindow.h
+@@ -15,7 +15,7 @@
+  */
+ 
+ #ifndef INCLUDED_FROM_FRAMEBUFFER_NATIVE_WINDOW_CPP
+-#warning "FramebufferNativeWindow is deprecated"
++//#warning "FramebufferNativeWindow is deprecated"
+ #endif
+ 
+ #ifndef ANDROID_FRAMEBUFFER_NATIVE_WINDOW_H
+diff --git a/libs/binder/IPCThreadState.cpp b/libs/binder/IPCThreadState.cpp
+index af18e11..9eee115 100644
+--- a/libs/binder/IPCThreadState.cpp
++++ b/libs/binder/IPCThreadState.cpp
+@@ -343,6 +343,10 @@ status_t IPCThreadState::clearLastError()
+     return err;
+ }
+ 
++extern "C" int _ZN7android14IPCThreadState13getCallingPidEv(IPCThreadState *state) {
++    return state->getCallingPid();
++}
++
+ pid_t IPCThreadState::getCallingPid() const
+ {
+     return mCallingPid;
+diff --git a/libs/binder/Parcel.cpp b/libs/binder/Parcel.cpp
+index 65e67d6..52f3378 100644
+--- a/libs/binder/Parcel.cpp
++++ b/libs/binder/Parcel.cpp
+@@ -895,6 +895,12 @@ status_t Parcel::writeString16(const String16& str)
+     return writeString16(str.string(), str.size());
+ }
+ 
++extern "C" status_t _ZN7android6Parcel13writeString16EPKDsj(void *parcel, const char16_t* str, size_t len);
++
++extern "C" status_t _ZN7android6Parcel13writeString16EPKtj(void *parcel, const char16_t* str, size_t len) {
++    return _ZN7android6Parcel13writeString16EPKDsj(parcel, str, len);
++}
++
+ status_t Parcel::writeString16(const char16_t* str, size_t len)
+ {
+     if (str == NULL) return writeInt32(-1);
+@@ -1034,6 +1040,12 @@ status_t Parcel::writeDupImmutableBlobFileDescriptor(int fd)
+     return writeDupFileDescriptor(fd);
+ }
+ 
++extern "C" status_t _ZN7android6Parcel5writeERKNS0_26FlattenableHelperInterfaceE(void *parcel, void *val);
++
++extern "C" status_t _ZN7android6Parcel5writeERKNS_11FlattenableE(void *parcel, void *val) {
++    return _ZN7android6Parcel5writeERKNS0_26FlattenableHelperInterfaceE(parcel, val);
++}
++
+ status_t Parcel::write(const FlattenableHelperInterface& val)
+ {
+     status_t err;
+@@ -1484,6 +1496,12 @@ status_t Parcel::readBlob(size_t len, ReadableBlob* outBlob) const
+     return NO_ERROR;
+ }
+ 
++extern "C" status_t _ZNK7android6Parcel4readERNS0_26FlattenableHelperInterfaceE(void *parcel, void *val);
++
++extern "C" status_t _ZNK7android6Parcel4readERNS_11FlattenableE(void *parcel, void *val) {
++    return _ZNK7android6Parcel4readERNS0_26FlattenableHelperInterfaceE(parcel, val);
++}
++
+ status_t Parcel::read(FlattenableHelperInterface& val) const
+ {
+     // size
 diff --git a/libs/gui/Android.mk b/libs/gui/Android.mk
-index 8a965dd..e439d84 100644
+index 76aec6e..ae6fc37 100644
 --- a/libs/gui/Android.mk
 +++ b/libs/gui/Android.mk
 @@ -82,6 +82,10 @@ LOCAL_SHARED_LIBRARIES := \
@@ -97,6 +164,23 @@ index 8a965dd..e439d84 100644
  LOCAL_MODULE := libgui
  
  ifeq ($(TARGET_BOARD_PLATFORM), tegra)
+diff --git a/libs/gui/BufferQueueProducer.cpp b/libs/gui/BufferQueueProducer.cpp
+index a941e2d..e4f9de9 100644
+--- a/libs/gui/BufferQueueProducer.cpp
++++ b/libs/gui/BufferQueueProducer.cpp
+@@ -193,7 +193,12 @@ status_t BufferQueueProducer::waitForFreeSlotThenRelock(const char* caller,
+             const int newUndequeuedCount =
+                 maxBufferCount - (dequeuedCount + 1);
+             const int minUndequeuedCount =
++#ifdef RHEA_HWC
++                // HACK: for some reason, we need to reduce min undequeue for screen recording
++                mCore->getMinUndequeuedBufferCountLocked(false);
++#else
+                 mCore->getMinUndequeuedBufferCountLocked(async);
++#endif
+             if (newUndequeuedCount < minUndequeuedCount) {
+                 BQ_LOGE("%s: min undequeued buffer count (%d) exceeded "
+                         "(dequeued=%d undequeued=%d)",
 diff --git a/libs/gui/ISurfaceComposer.cpp b/libs/gui/ISurfaceComposer.cpp
 index 0ad6339..7db2e7f 100644
 --- a/libs/gui/ISurfaceComposer.cpp
@@ -168,14 +252,14 @@ index 0ad6339..7db2e7f 100644
              CHECK_INTERFACE(ISurfaceComposer, data, reply);
              sp<IBinder> display = data.readStrongBinder();
 diff --git a/libs/gui/SurfaceComposerClient.cpp b/libs/gui/SurfaceComposerClient.cpp
-index 82bdd6b..0be73d6 100644
+index 82bdd6b..916c4f5 100644
 --- a/libs/gui/SurfaceComposerClient.cpp
 +++ b/libs/gui/SurfaceComposerClient.cpp
 @@ -764,6 +764,14 @@ status_t ScreenshotClient::capture(
          uint32_t minLayerZ, uint32_t maxLayerZ, bool useIdentityTransform) {
      sp<ISurfaceComposer> s(ComposerService::getComposerService());
      if (s == NULL) return NO_INIT;
-+#ifdef USE_MHEAP_SCREENSHOT
++#if defined(USE_MHEAP_SCREENSHOT) && !defined(RHEA_HWC)
 +    int format = 0;
 +    producer->query(NATIVE_WINDOW_FORMAT,&format);
 +    if (format == PIXEL_FORMAT_RGBA_8888) {
@@ -231,11 +315,44 @@ index 82bdd6b..0be73d6 100644
  }
  
  void const* ScreenshotClient::getPixels() const {
+diff --git a/libs/gui/tests/Surface_test.cpp b/libs/gui/tests/Surface_test.cpp
+index 3f495f8..0311d1f 100644
+--- a/libs/gui/tests/Surface_test.cpp
++++ b/libs/gui/tests/Surface_test.cpp
+@@ -98,7 +98,7 @@ TEST_F(SurfaceTest, ScreenshotsOfProtectedBuffersSucceed) {
+     sp<ISurfaceComposer> sf(ComposerService::getComposerService());
+     sp<IBinder> display(sf->getBuiltInDisplay(ISurfaceComposer::eDisplayIdMain));
+     ASSERT_EQ(NO_ERROR, sf->captureScreen(display, producer, Rect(),
+-            64, 64, 0, 0x7fffffff, false));
++            64, 64, 0, 0x7fffffff, false, ISurfaceComposer::eRotateNone, false));
+ 
+     // Set the PROTECTED usage bit and verify that the screenshot fails.  Note
+     // that we need to dequeue a buffer in order for it to actually get
+@@ -127,7 +127,7 @@ TEST_F(SurfaceTest, ScreenshotsOfProtectedBuffersSucceed) {
+         ASSERT_EQ(NO_ERROR, anw->queueBuffer(anw.get(), buf, -1));
+     }
+     ASSERT_EQ(NO_ERROR, sf->captureScreen(display, producer, Rect(),
+-            64, 64, 0, 0x7fffffff, false));
++            64, 64, 0, 0x7fffffff, false, ISurfaceComposer::eRotateNone, false));
+ }
+ 
+ TEST_F(SurfaceTest, ConcreteTypeIsSurface) {
 diff --git a/services/surfaceflinger/Android.mk b/services/surfaceflinger/Android.mk
-index c921329..b80f8fb 100644
+index 6a90083..d1b1720 100644
 --- a/services/surfaceflinger/Android.mk
 +++ b/services/surfaceflinger/Android.mk
-@@ -64,6 +64,10 @@ ifeq ($(TARGET_RUNNING_WITHOUT_SYNC_FRAMEWORK),true)
+@@ -57,6 +57,10 @@ ifeq ($(TARGET_DISABLE_TRIPLE_BUFFERING),true)
+     LOCAL_CFLAGS += -DTARGET_DISABLE_TRIPLE_BUFFERING
+ endif
+ 
++ifeq ($(BOARD_EGL_NEEDS_FNW),true)
++    LOCAL_CFLAGS += -DEGL_NEEDS_FNW
++endif
++
+ ifeq ($(TARGET_FORCE_HWC_FOR_VIRTUAL_DISPLAYS),true)
+     LOCAL_CFLAGS += -DFORCE_HWC_COPY_FOR_VIRTUAL_DISPLAYS
+ endif
+@@ -69,6 +73,10 @@ ifeq ($(TARGET_RUNNING_WITHOUT_SYNC_FRAMEWORK),true)
      LOCAL_CFLAGS += -DRUNNING_WITHOUT_SYNC_FRAMEWORK
  endif
  
@@ -246,8 +363,35 @@ index c921329..b80f8fb 100644
  # See build/target/board/generic/BoardConfig.mk for a description of this setting.
  ifneq ($(VSYNC_EVENT_PHASE_OFFSET_NS),)
      LOCAL_CFLAGS += -DVSYNC_EVENT_PHASE_OFFSET_NS=$(VSYNC_EVENT_PHASE_OFFSET_NS)
+diff --git a/services/surfaceflinger/DisplayDevice.cpp b/services/surfaceflinger/DisplayDevice.cpp
+index b83149b..a2166d7 100644
+--- a/services/surfaceflinger/DisplayDevice.cpp
++++ b/services/surfaceflinger/DisplayDevice.cpp
+@@ -27,6 +27,10 @@
+ #include <ui/DisplayInfo.h>
+ #include <ui/PixelFormat.h>
+ 
++#ifdef EGL_NEEDS_FNW
++#include <ui/FramebufferNativeWindow.h>
++#endif
++
+ #include <gui/Surface.h>
+ 
+ #include <hardware/gralloc.h>
+@@ -90,7 +94,11 @@ DisplayDevice::DisplayDevice(
+ {
+     Surface* surface;
+     mNativeWindow = surface = new Surface(producer, false);
++#ifndef EGL_NEEDS_FNW
+     ANativeWindow* const window = mNativeWindow.get();
++#else
++    ANativeWindow* const window = new FramebufferNativeWindow();
++#endif
+     char property[PROPERTY_VALUE_MAX];
+ 
+     /*
 diff --git a/services/surfaceflinger/SurfaceFlinger.cpp b/services/surfaceflinger/SurfaceFlinger.cpp
-index 4051b38..4e122da 100644
+index 97d3163..569f486 100644
 --- a/services/surfaceflinger/SurfaceFlinger.cpp
 +++ b/services/surfaceflinger/SurfaceFlinger.cpp
 @@ -26,6 +26,9 @@
@@ -260,7 +404,7 @@ index 4051b38..4e122da 100644
  
  #include <cutils/log.h>
  #include <cutils/iosched_policy.h>
-@@ -3008,12 +3011,18 @@ status_t SurfaceFlinger::onTransact(
+@@ -3024,12 +3027,18 @@ status_t SurfaceFlinger::onTransact(
              break;
          }
          case CAPTURE_SCREEN:
@@ -279,7 +423,7 @@ index 4051b38..4e122da 100644
                      !PermissionCache::checkPermission(sReadFramebuffer, pid, uid)) {
                  ALOGE("Permission Denial: "
                          "can't read framebuffer pid=%d, uid=%d", pid, uid);
-@@ -3349,9 +3358,18 @@ status_t SurfaceFlinger::captureScreen(const sp<IBinder>& display,
+@@ -3389,9 +3398,18 @@ status_t SurfaceFlinger::captureScreen(const sp<IBinder>& display,
              Mutex::Autolock _l(flinger->mStateLock);
              sp<const DisplayDevice> hw(flinger->getDisplayDevice(display));
              bool useReadPixels = this->useReadPixels && !flinger->mGpuToCpuSupported;
@@ -301,7 +445,19 @@ index 4051b38..4e122da 100644
              static_cast<GraphicProducerWrapper*>(IInterface::asBinder(producer).get())->exit(result);
              return true;
          }
-@@ -3633,6 +3651,139 @@ void SurfaceFlinger::checkScreenshot(size_t w, size_t s, size_t h, void const* v
+@@ -3508,6 +3526,11 @@ status_t SurfaceFlinger::captureScreenImplLocked(
+ {
+     ATRACE_CALL();
+ 
++// Rotation artifact problems when useReadPixels is false
++#ifdef RHEA_HWC
++    useReadPixels = true;
++#endif
++
+     // get screen geometry
+     uint32_t hw_w = hw->getWidth();
+     uint32_t hw_h = hw->getHeight();
+@@ -3672,6 +3695,139 @@ void SurfaceFlinger::checkScreenshot(size_t w, size_t s, size_t h, void const* v
      }
  }
  
@@ -441,7 +597,7 @@ index 4051b38..4e122da 100644
  /* ------------------------------------------------------------------------
   * Extensions
   */
-@@ -3717,6 +3868,7 @@ SurfaceFlinger::DisplayDeviceState::DisplayDeviceState(DisplayDevice::DisplayTyp
+@@ -3756,6 +3912,7 @@ SurfaceFlinger::DisplayDeviceState::DisplayDeviceState(DisplayDevice::DisplayTyp
  }; // namespace android
  
  
@@ -449,13 +605,13 @@ index 4051b38..4e122da 100644
  #if defined(__gl_h_)
  #error "don't include gl/gl.h in this file"
  #endif
-@@ -3724,3 +3876,4 @@ SurfaceFlinger::DisplayDeviceState::DisplayDeviceState(DisplayDevice::DisplayTyp
+@@ -3763,3 +3920,4 @@ SurfaceFlinger::DisplayDeviceState::DisplayDeviceState(DisplayDevice::DisplayTyp
  #if defined(__gl2_h_)
  #error "don't include gl2/gl2.h in this file"
  #endif
 +#endif
 diff --git a/services/surfaceflinger/SurfaceFlinger.h b/services/surfaceflinger/SurfaceFlinger.h
-index 2028d67..6f31d8e 100644
+index 20d65c1..0497cec 100644
 --- a/services/surfaceflinger/SurfaceFlinger.h
 +++ b/services/surfaceflinger/SurfaceFlinger.h
 @@ -218,6 +218,13 @@ private:
@@ -489,238 +645,5 @@ index 2028d67..6f31d8e 100644
       * EGL
       */
 -- 
-2.6.3
-
-
-From 78a2de4ae8aa82bb46e84e99a1ebd071a47903df Mon Sep 17 00:00:00 2001
-From: Pawit Pornkitprasan <p.pawit@gmail.com>
-Date: Wed, 26 Nov 2014 20:04:52 +0700
-Subject: [PATCH 2/8] libgui: fix test after compatibility patches
-
-Change-Id: Iae7333f025bb0271f008e4cc0356cf704800f1b7
----
- libs/gui/tests/Surface_test.cpp | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/libs/gui/tests/Surface_test.cpp b/libs/gui/tests/Surface_test.cpp
-index 3f495f8..0311d1f 100644
---- a/libs/gui/tests/Surface_test.cpp
-+++ b/libs/gui/tests/Surface_test.cpp
-@@ -98,7 +98,7 @@ TEST_F(SurfaceTest, ScreenshotsOfProtectedBuffersSucceed) {
-     sp<ISurfaceComposer> sf(ComposerService::getComposerService());
-     sp<IBinder> display(sf->getBuiltInDisplay(ISurfaceComposer::eDisplayIdMain));
-     ASSERT_EQ(NO_ERROR, sf->captureScreen(display, producer, Rect(),
--            64, 64, 0, 0x7fffffff, false));
-+            64, 64, 0, 0x7fffffff, false, ISurfaceComposer::eRotateNone, false));
- 
-     // Set the PROTECTED usage bit and verify that the screenshot fails.  Note
-     // that we need to dequeue a buffer in order for it to actually get
-@@ -127,7 +127,7 @@ TEST_F(SurfaceTest, ScreenshotsOfProtectedBuffersSucceed) {
-         ASSERT_EQ(NO_ERROR, anw->queueBuffer(anw.get(), buf, -1));
-     }
-     ASSERT_EQ(NO_ERROR, sf->captureScreen(display, producer, Rect(),
--            64, 64, 0, 0x7fffffff, false));
-+            64, 64, 0, 0x7fffffff, false, ISurfaceComposer::eRotateNone, false));
- }
- 
- TEST_F(SurfaceTest, ConcreteTypeIsSurface) {
--- 
-2.6.3
-
-
-From 276619834837efbdef0d36522591b656e8077755 Mon Sep 17 00:00:00 2001
-From: Pawit Pornkitprasan <p.pawit@gmail.com>
-Date: Thu, 14 Nov 2013 15:19:46 +0700
-Subject: [PATCH 3/8] binder: add compat symbol
-
-Required for older Samsung libtvout
-
-Change-Id: Ib18d2513570382432d49f302ab041230650372f2
----
- libs/binder/IPCThreadState.cpp | 4 ++++
- 1 file changed, 4 insertions(+)
-
-diff --git a/libs/binder/IPCThreadState.cpp b/libs/binder/IPCThreadState.cpp
-index ef88181..a6daf23 100644
---- a/libs/binder/IPCThreadState.cpp
-+++ b/libs/binder/IPCThreadState.cpp
-@@ -343,6 +343,10 @@ status_t IPCThreadState::clearLastError()
-     return err;
- }
- 
-+extern "C" int _ZN7android14IPCThreadState13getCallingPidEv(IPCThreadState *state) {
-+    return state->getCallingPid();
-+}
-+
- pid_t IPCThreadState::getCallingPid() const
- {
-     return mCallingPid;
--- 
-2.6.3
-
-
-From 1f8a75a3e6fd68a7a93fecc2d596696ca6c4480c Mon Sep 17 00:00:00 2001
-From: Pawit Pornkitprasan <p.pawit@gmail.com>
-Date: Tue, 10 Dec 2013 19:38:17 +0700
-Subject: [PATCH 4/8] binder: add compat symbols
-
-Required for libtvservice_binder.so on I9082
-
-Change-Id: I059e92f19e4c5a911d38faa9c4df549c75c90761
----
- libs/binder/Parcel.cpp | 12 ++++++++++++
- 1 file changed, 12 insertions(+)
-
-diff --git a/libs/binder/Parcel.cpp b/libs/binder/Parcel.cpp
-index 22d7ef3..7709a88 100644
---- a/libs/binder/Parcel.cpp
-+++ b/libs/binder/Parcel.cpp
-@@ -990,6 +990,12 @@ status_t Parcel::writeDupImmutableBlobFileDescriptor(int fd)
-     return writeDupFileDescriptor(fd);
- }
- 
-+extern "C" status_t _ZN7android6Parcel5writeERKNS0_26FlattenableHelperInterfaceE(void *parcel, void *val);
-+
-+extern "C" status_t _ZN7android6Parcel5writeERKNS_11FlattenableE(void *parcel, void *val) {
-+    return _ZN7android6Parcel5writeERKNS0_26FlattenableHelperInterfaceE(parcel, val);
-+}
-+
- status_t Parcel::write(const FlattenableHelperInterface& val)
- {
-     status_t err;
-@@ -1430,6 +1436,12 @@ status_t Parcel::readBlob(size_t len, ReadableBlob* outBlob) const
-     return NO_ERROR;
- }
- 
-+extern "C" status_t _ZNK7android6Parcel4readERNS0_26FlattenableHelperInterfaceE(void *parcel, void *val);
-+
-+extern "C" status_t _ZNK7android6Parcel4readERNS_11FlattenableE(void *parcel, void *val) {
-+    return _ZNK7android6Parcel4readERNS0_26FlattenableHelperInterfaceE(parcel, val);
-+}
-+
- status_t Parcel::read(FlattenableHelperInterface& val) const
- {
-     // size
--- 
-2.6.3
-
-
-From 4a39ea27956a1a9c37dcc9cd63c8fcd1f8f3d3e4 Mon Sep 17 00:00:00 2001
-From: Pawit Pornkitprasan <p.pawit@gmail.com>
-Date: Mon, 16 Dec 2013 15:45:42 +0700
-Subject: [PATCH 5/8] sf: RHEA_HWC: fix rotation artifact
-
----
- services/surfaceflinger/SurfaceFlinger.cpp | 5 +++++
- 1 file changed, 5 insertions(+)
-
-diff --git a/services/surfaceflinger/SurfaceFlinger.cpp b/services/surfaceflinger/SurfaceFlinger.cpp
-index 4e122da..064e1d5 100644
---- a/services/surfaceflinger/SurfaceFlinger.cpp
-+++ b/services/surfaceflinger/SurfaceFlinger.cpp
-@@ -3487,6 +3487,11 @@ status_t SurfaceFlinger::captureScreenImplLocked(
- {
-     ATRACE_CALL();
- 
-+// Rotation artifact problems when useReadPixels is false
-+#ifdef RHEA_HWC
-+    useReadPixels = true;
-+#endif
-+
-     // get screen geometry
-     uint32_t hw_w = hw->getWidth();
-     uint32_t hw_h = hw->getHeight();
--- 
-2.6.3
-
-
-From c2e3e31878824f25187970bb355e8865ea7a10f5 Mon Sep 17 00:00:00 2001
-From: Pawit Pornkitprasan <p.pawit@gmail.com>
-Date: Mon, 15 Dec 2014 23:12:44 +0700
-Subject: [PATCH 6/8] SurfaceComposerClient: don't block RGBA_8888 for
- screenshot on RHEA_HWC
-
-Works here and required for ColorFade animation
-
-Change-Id: Ie7d549bb63e11380d7efcab27b7e4d9f3eb2a1fe
----
- libs/gui/SurfaceComposerClient.cpp | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/libs/gui/SurfaceComposerClient.cpp b/libs/gui/SurfaceComposerClient.cpp
-index 0be73d6..038b54b 100644
---- a/libs/gui/SurfaceComposerClient.cpp
-+++ b/libs/gui/SurfaceComposerClient.cpp
-@@ -764,7 +764,7 @@ status_t ScreenshotClient::capture(
-         uint32_t minLayerZ, uint32_t maxLayerZ, bool useIdentityTransform) {
-     sp<ISurfaceComposer> s(ComposerService::getComposerService());
-     if (s == NULL) return NO_INIT;
--#ifdef USE_MHEAP_SCREENSHOT
-+#if defined(USE_MHEAP_SCREENSHOT) && !defined(RHEA_HWC)
-     int format = 0;
-     producer->query(NATIVE_WINDOW_FORMAT,&format);
-     if (format == PIXEL_FORMAT_RGBA_8888) {
--- 
-2.6.3
-
-
-From 3ae5f34043d199dc79576b41506a1069bb536bfe Mon Sep 17 00:00:00 2001
-From: Pawit Pornkitprasan <p.pawit@gmail.com>
-Date: Sat, 20 Dec 2014 19:09:27 +0700
-Subject: [PATCH 7/8] sf: RHEA_HWC: fix for screen recording
-
-Change-Id: I6c7e59400eab86bc5ec0ffebbcc475fa0fa404d2
----
- libs/gui/BufferQueueProducer.cpp | 5 +++++
- 1 file changed, 5 insertions(+)
-
-diff --git a/libs/gui/BufferQueueProducer.cpp b/libs/gui/BufferQueueProducer.cpp
-index 87e5b4d..9634db7 100644
---- a/libs/gui/BufferQueueProducer.cpp
-+++ b/libs/gui/BufferQueueProducer.cpp
-@@ -193,7 +193,12 @@ status_t BufferQueueProducer::waitForFreeSlotThenRelock(const char* caller,
-             const int newUndequeuedCount =
-                 maxBufferCount - (dequeuedCount + 1);
-             const int minUndequeuedCount =
-+#ifdef RHEA_HWC
-+                // HACK: for some reason, we need to reduce min undequeue for screen recording
-+                mCore->getMinUndequeuedBufferCountLocked(false);
-+#else
-                 mCore->getMinUndequeuedBufferCountLocked(async);
-+#endif
-             if (newUndequeuedCount < minUndequeuedCount) {
-                 BQ_LOGE("%s: min undequeued buffer count (%d) exceeded "
-                         "(dequeued=%d undequeued=%d)",
--- 
-2.6.3
-
-
-From a9e061a5f8349a68536a6f427547b6e0463fd9de Mon Sep 17 00:00:00 2001
-From: Pawit Pornkitprasan <p.pawit@gmail.com>
-Date: Sun, 11 Oct 2015 15:28:51 +0700
-Subject: [PATCH 8/8] binder: add compat symbol for RIL
-
----
- libs/binder/Parcel.cpp | 6 ++++++
- 1 file changed, 6 insertions(+)
-
-diff --git a/libs/binder/Parcel.cpp b/libs/binder/Parcel.cpp
-index 7709a88..90c3e12 100644
---- a/libs/binder/Parcel.cpp
-+++ b/libs/binder/Parcel.cpp
-@@ -851,6 +851,12 @@ status_t Parcel::writeString16(const String16& str)
-     return writeString16(str.string(), str.size());
- }
- 
-+extern "C" status_t _ZN7android6Parcel13writeString16EPKDsj(void *parcel, const char16_t* str, size_t len);
-+
-+extern "C" status_t _ZN7android6Parcel13writeString16EPKtj(void *parcel, const char16_t* str, size_t len) {
-+    return _ZN7android6Parcel13writeString16EPKDsj(parcel, str, len);
-+}
-+
- status_t Parcel::writeString16(const char16_t* str, size_t len)
- {
-     if (str == NULL) return writeInt32(-1);
--- 
-2.6.3
+2.1.4
 
