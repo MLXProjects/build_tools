@@ -1,0 +1,33 @@
+From 9c6f9eb767e0518394202d5a778b4ebdb9cd52f3 Mon Sep 17 00:00:00 2001
+From: sarath280 <myappleid2849@gmail.com>
+Date: Sat, 30 Jul 2016 09:18:04 +0200
+Subject: [PATCH 1/1] ignore warnings over text relocations
+
+Change-Id: I4c1a2e7400dc6194efe987143ed256af8a97aabb
+---
+ linker/linker.cpp | 5 -----
+ 1 file changed, 5 deletions(-)
+
+diff --git a/linker/linker.cpp b/linker/linker.cpp
+index 6019c91..acbf033 100644
+--- a/linker/linker.cpp
++++ b/linker/linker.cpp
+@@ -3016,15 +3016,10 @@ bool soinfo::link_image(const soinfo_list_t& global_group, const soinfo_list_t&
+ #if !defined(__i386__) // ffmpeg says that they require text relocations on x86
+     if (get_application_target_sdk_version() != __ANDROID_API__
+         && get_application_target_sdk_version() > 22) {
+-      PRINT("%s: has text relocations", get_realpath());
+-      DL_ERR("%s: has text relocations", get_realpath());
+-      return false;
+     }
+ #endif
+     // Make segments writable to allow text relocations to work properly. We will later call
+     // phdr_table_protect_segments() after all of them are applied and all constructors are run.
+-    DL_WARN("%s has text relocations. This is wasting memory and prevents "
+-            "security hardening. Please fix.", get_realpath());
+     if (phdr_table_unprotect_segments(phdr, phnum, load_bias) < 0) {
+       DL_ERR("can't unprotect loadable segments for \"%s\": %s",
+              get_realpath(), strerror(errno));
+-- 
+2.1.4
+
