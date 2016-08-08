@@ -18,7 +18,7 @@ PATCHES=(
 'frameworks/opt/telephony	frameworks_opt_telephony.patch'
 'hardware/libhardware           audio_fix.patch'
 'hardware/broadcom/libbt	hardware_broadcom_libbt.patch'
-'system/media/audio             microphone_fix.patch'
+#system/media/audio             microphone_fix.patch'
 'packages/inputmethods/LatinIME packages_inputmethods_LatinIME.patch'
 'packages/services/Telephony	packages_services_Telephony.patch'
 'system/core			system_core.patch'
