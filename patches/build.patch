@@ -1,10 +1,35 @@
-From e145ed91d78094f1d922344c56e61e1c37d1c35a Mon Sep 17 00:00:00 2001
-From: Faiz Authar <faizauthar@gmail.com>
-Date: Tue, 12 Apr 2016 15:53:41 +0700
-Subject: Fix Fail compile kernel for rhea
+From f683c822b1125f7627154d28ce7141ce7bb959c1 Mon Sep 17 00:00:00 2001
+From: karthick111 <lensflare21@gmail.com>
+Date: Mon, 19 Sep 2016 20:40:18 +0530 
+Change-Id: I604ebd316641c9ae75ba3c88e88a0ce860bb4fd4
+---
+ core/Makefile        | 6 +++++-
+ core/tasks/kernel.mk | 8 +-------
+ 2 files changed, 6 insertions(+), 8 deletions(-)
 
-Change-Id: I1f4c011476f9534e0a60410ce61f21ea45db2888
-
+diff --git a/core/Makefile b/core/Makefile
+index 9ab196a..a9f9282 100644
+--- a/core/Makefile
++++ b/core/Makefile
+@@ -1720,13 +1720,17 @@ ifneq ($(TARGET_UNIFIED_DEVICE),)
+     endif
+ endif
+ 
++ifneq ($(BLOCK_BASED_OTA),false)
++    $(INTERNAL_OTA_PACKAGE_TARGET): block_based := --block
++endif
++
+ $(INTERNAL_OTA_PACKAGE_TARGET): $(BUILT_TARGET_FILES_PACKAGE) $(DISTTOOLS)
+ 	@echo "$(OTA_FROM_TARGET_SCRIPT)" > $(PRODUCT_OUT)/ota_script_path
+ 	@echo "$(override_device)" > $(PRODUCT_OUT)/ota_override_device
+ 	@echo -e ${CL_YLW}"Package OTA:"${CL_RST}" $@"
+ 	$(hide) MKBOOTIMG=$(MKBOOTIMG) \
+ 	   $(OTA_FROM_TARGET_SCRIPT) -v \
+-	   --block \
++	   $(block_based) \
+ 	   $(if $(WITH_LZMA_OTA), -z) \
+ 	   -p $(HOST_OUT) \
+ 	   -k $(KEY_CERT_PAIR) \
 diff --git a/core/tasks/kernel.mk b/core/tasks/kernel.mk
 index 4283dbb..f44579b 100644
 --- a/core/tasks/kernel.mk
@@ -24,3 +49,6 @@ index 4283dbb..f44579b 100644
  	$(hide) if grep -q 'CONFIG_MODULES=y' $(KERNEL_CONFIG) ; \
  			then \
  				echo -e ${CL_GRN}"Building Kernel Modules"${CL_RST} ; \
+-- 
+2.7.4
+
