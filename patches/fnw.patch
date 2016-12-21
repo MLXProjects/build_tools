@@ -69,16 +69,16 @@ index 0000000..2eb1cc1
 +
 +// ---------------------------------------------------------------------------
 +
-+class FramebufferNativeWindow 
++class FramebufferNativeWindow
 +    : public ANativeObjectBase<
-+        ANativeWindow, 
-+        FramebufferNativeWindow, 
++        ANativeWindow,
++        FramebufferNativeWindow,
 +        LightRefBase<FramebufferNativeWindow> >
 +{
 +public:
-+    FramebufferNativeWindow(); 
++    FramebufferNativeWindow();
 +
-+    framebuffer_device_t const * getDevice() const { return fbDev; } 
++    framebuffer_device_t const * getDevice() const { return fbDev; }
 +
 +    bool isUpdateOnDemand() const { return mUpdateOnDemand; }
 +    status_t setUpdateRectangle(const Rect& updateRect);
@@ -90,7 +90,7 @@ index 0000000..2eb1cc1
 +    int getCurrentBufferIndex() const;
 +
 +private:
-+    friend class LightRefBase<FramebufferNativeWindow>;    
++    friend class LightRefBase<FramebufferNativeWindow>;
 +    ~FramebufferNativeWindow(); // this class cannot be overloaded
 +    static int setSwapInterval(ANativeWindow* window, int interval);
 +    static int dequeueBuffer(ANativeWindow* window, ANativeWindowBuffer** buffer, int* fenceFd);
@@ -107,7 +107,7 @@ index 0000000..2eb1cc1
 +
 +    sp<NativeBuffer> buffers[MAX_NUM_FRAME_BUFFERS];
 +    sp<NativeBuffer> front;
-+    
++
 +    mutable Mutex mutex;
 +    Condition mCondition;
 +    int32_t mNumBuffers;
@@ -116,13 +116,12 @@ index 0000000..2eb1cc1
 +    int32_t mCurrentBufferIndex;
 +    bool mUpdateOnDemand;
 +};
-+    
++
 +// ---------------------------------------------------------------------------
 +}; // namespace android
 +// ---------------------------------------------------------------------------
 +
 +#endif // ANDROID_FRAMEBUFFER_NATIVE_WINDOW_H
-+
 diff --git a/libs/gui/Android.mk b/libs/gui/Android.mk
 index dff6a37..0139588 100644
 --- a/libs/gui/Android.mk
@@ -227,7 +226,7 @@ index 48b1db8..ed6723a 100644
          return NO_INIT;
      }
 -
-+    
++
 +#ifndef EGL_NEEDS_FNW
      if (mCore->mConnectedApi == BufferQueueCore::NO_CONNECTED_API) {
          BQ_LOGE("cancelBuffer: BufferQueue has no connected producer");
