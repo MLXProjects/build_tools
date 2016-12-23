@@ -1,23 +1,53 @@
- linker/linker.cpp | 6 ------
- 1 file changed, 6 deletions(-)
+From 3d1dd8e838987c179008adcf6ced697220d4fb49 Mon Sep 17 00:00:00 2001
+From: karthick111 <karthickrko61@gmail.com>
+Date: Fri, 23 Dec 2016 14:10:31 +0100
+Subject: [PATCH 1/1] linker: Make text relocations denial optional
 
+ * Use the TARGET_NEEDS_TEXT_RELOCATIONS := true
+    configuration to allow a device to use
+    legacy proprietary libraries like camera
+
+ * Partial revert "Remove textrels support for platform libs"
+    commit 8068786.
+
+Change-Id: I994ab1a600a0b237b496ceebe2dd54febc28a6bd
+---
+ linker/Android.mk | 4 ++++
+ linker/linker.cpp | 4 ++++
+ 2 files changed, 8 insertions(+)
+
+diff --git a/linker/Android.mk b/linker/Android.mk
+index 7a9b5d9..e05c790 100644
+--- a/linker/Android.mk
++++ b/linker/Android.mk
+@@ -49,6 +49,10 @@ ifeq ($(TARGET_IS_64_BIT),true)
+ LOCAL_CPPFLAGS += -DTARGET_IS_64_BIT
+ endif
+ 
++ifeq ($(TARGET_NEEDS_TEXT_RELOCATIONS),true)
++LOCAL_CPPFLAGS += -DTARGET_NEEDS_TEXT_RELOCATIONS
++endif
++
+ # We need to access Bionic private headers in the linker.
+ LOCAL_CFLAGS += -I$(LOCAL_PATH)/../libc/
+ 
 diff --git a/linker/linker.cpp b/linker/linker.cpp
-index 99c02d8..2f3d0a1 100644
+index 99c02d8..684bbcb 100644
 --- a/linker/linker.cpp
 +++ b/linker/linker.cpp
-@@ -3014,12 +3014,6 @@ bool soinfo::link_image(const soinfo_list_t& global_group, const soinfo_list_t&
+@@ -3014,8 +3014,12 @@ bool soinfo::link_image(const soinfo_list_t& global_group, const soinfo_list_t&
      // Fail if app is targeting sdk version > 22
      // TODO (dimitry): remove != __ANDROID_API__ check once http://b/20020312 is fixed
  #if !defined(__i386__) // ffmpeg says that they require text relocations on x86
--    if (get_application_target_sdk_version() != __ANDROID_API__
--        && get_application_target_sdk_version() > 22) {
--      PRINT("%s: has text relocations", get_realpath());
--      DL_ERR("%s: has text relocations", get_realpath());
--      return false;
--    }
- #endif
-     // Make segments writable to allow text relocations to work properly. We will later call
-     // phdr_table_protect_segments() after all of them are applied and all constructors are run.
++#if defined(TARGET_NEEDS_TEXT_RELOCATIONS)
+     if (get_application_target_sdk_version() != __ANDROID_API__
+         && get_application_target_sdk_version() > 22) {
++#else
++    if (get_application_target_sdk_version() > 22) {
++#endif
+       PRINT("%s: has text relocations", get_realpath());
+       DL_ERR("%s: has text relocations", get_realpath());
+       return false;
 -- 
 2.1.4
 
