@@ -39,7 +39,7 @@ index 99c02d8..684bbcb 100644
      // Fail if app is targeting sdk version > 22
      // TODO (dimitry): remove != __ANDROID_API__ check once http://b/20020312 is fixed
 -#if !defined(__i386__) // ffmpeg says that they require text relocations on x86
-+#if !defined(__i386) || defined(TARGET_NEEDS_TEXT_RELOCATIONS) // ffmpeg says that they require text relocations on x86, and Broadcom says that they won't fix old blobs
++#if !defined(__i386) || !defined(TARGET_NEEDS_TEXT_RELOCATIONS) // ffmpeg says that they require text relocations on x86, and Broadcom says that they won't fix old blobs
      if (get_application_target_sdk_version() != __ANDROID_API__
          && get_application_target_sdk_version() > 22) {
        PRINT("%s: has text relocations", get_realpath());
